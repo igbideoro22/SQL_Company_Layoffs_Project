@@ -141,7 +141,7 @@ FROM layoffs_staging_Cleaned
 GROUP BY country
 ORDER BY 2 DESC;
 
--- TOP 5 COMPANIES LAY OFF PER YEAR
+-- TOP 5 COMPANIES LAY OFF WORLDWIDE PER YEAR
 
 WITH Company_Group AS
 (SELECT company, industry, YEAR(`date`) AS `Year`, SUM(total_laid_off) AS `total number laid off in the Year`
@@ -158,7 +158,7 @@ FROM Company_total
 WHERE `Ranking` <= 5
 ;
 
--- TOP 5 INDUSTRIES LAY OFF PER YEAR
+-- TOP 5 INDUSTRIES WORLDWIDE LAY OFF PER YEAR
 
 WITH industry_layoffs AS
 (SELECT industry, YEAR(`date`) AS `year`, SUM(total_laid_off) AS `sum_total_laid_off`
@@ -176,5 +176,39 @@ WHERE `Ranking` <= 5;
 
 
 
--- TOP 5 FUND RAISERS PER YEAR
+-- RANGE OF THE DATA SET
+SELECT SUBSTR(`date`, 1,7) AS `sub`
+FROM layoffs_staging_Cleaned
+WHERE 1 IS NOT NULL
+GROUP BY 1
+ORDER BY 1;
+
+
+-- TOP 5 FUND RAISERS WORLDWIDE PER YEAR
+WITH fund_raisers AS
+(SELECT company, industry, YEAR(`date`) AS `Year`, SUM(funds_raised_millions) AS `funds`
+FROM layoffs_staging_Cleaned
+GROUP BY company, industry, YEAR(`date`)),
+fund_raisers2 AS
+(SELECT *, DENSE_RANK() OVER(PARTITION BY `Year` ORDER BY `funds` DESC) AS `Ranking`
+FROM fund_raisers
+WHERE `Year` IS NOT NULL AND `funds`IS NOT NULL)
+SELECT *
+FROM fund_raisers2
+WHERE `Ranking` <= 5;
+
+
+-- TOP FUND RAISERS IN A COUNTRY PER YEAR
+WITH Country_funds AS
+(SELECT company, industry, country, YEAR(`date`) AS `Year`, SUM(funds_raised_millions) AS `Funds`
+FROM layoffs_staging_Cleaned
+GROUP BY company, industry, country, YEAR(`date`)),
+Country_funds_Ranked AS
+(SELECT *, DENSE_RANK() OVER(PARTITION BY country, `Year` ORDER BY Funds DESC) AS `Ranking`
+FROM Country_funds
+WHERE `Funds` IS NOT NULL AND `Year` IS NOT NULL)
+SELECT *
+FROM Country_funds_Ranked
+WHERE `Ranking` = 1;
+
 
